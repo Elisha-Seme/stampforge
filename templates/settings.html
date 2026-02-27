@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block page_title %}Settings{% endblock %}
+
+{% block content %}
+<div class="settings-layout">
+
+  <!-- Organization settings -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title"><i class="fa-solid fa-building"></i> Organization</h2>
+    </div>
+    <form onsubmit="saveOrgSettings(event)">
+      <div class="form-group">
+        <label>Organization Name</label>
+        <input type="text" id="org_name" class="form-input"
+               value="{{ org.name if org else '' }}" placeholder="Your Organization Name"/>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Primary Color</label>
+          <div class="color-pick-row">
+            <input type="color" id="org_primary" value="{{ org.primary_color if org else '#1a2b5e' }}"/>
+            <input type="text"  id="org_primary_hex" class="form-input" maxlength="7"
+                   value="{{ org.primary_color if org else '#1a2b5e' }}"
+                   onchange="syncColor('org_primary','org_primary_hex')"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Accent Color</label>
+          <div class="color-pick-row">
+            <input type="color" id="org_accent" value="{{ org.accent_color if org else '#2563eb' }}"/>
+            <input type="text"  id="org_accent_hex" class="form-input" maxlength="7"
+                   value="{{ org.accent_color if org else '#2563eb' }}"
+                   onchange="syncColor('org_accent','org_accent_hex')"/>
+          </div>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">
+        <i class="fa-solid fa-floppy-disk"></i> Save Organization Settings
+      </button>
+    </form>
+  </div>
+
+  <!-- Logo upload -->
+  <div class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title"><i class="fa-regular fa-image"></i> Organization Logo</h2>
+    </div>
+    <p class="text-muted">The logo appears in the center of circular stamps (Style A &amp; D) when enabled.</p>
+
+    {% if org and org.logo_path %}
+    <div class="current-logo">
+      <img src="/static/{{ org.logo_path }}" alt="Current Logo" class="logo-preview"/>
+      <p class="text-muted text-sm">Current logo</p>
+    </div>
+    {% endif %}
+
+    <div class="dropzone" id="logoDropzone" onclick="document.getElementById('logoFileInput').click()">
+      <i class="fa-regular fa-image fa-2x"></i>
+      <p>Click or drag to upload logo (PNG, JPG recommended)</p>
+      <input type="file" id="logoFileInput" accept=".png,.jpg,.jpeg,.gif,.webp"
+             class="hidden" onchange="uploadLogo(event)"/>
+    </div>
+    <div id="logoResult"></div>
+  </div>
+
+  <!-- Danger zone -->
+  <div class="panel panel-danger">
+    <div class="panel-header">
+      <h2 class="panel-title"><i class="fa-solid fa-triangle-exclamation"></i> Danger Zone</h2>
+    </div>
+    <p class="text-muted">These actions are irreversible. Proceed with caution.</p>
+    <div class="danger-actions">
+      <button class="btn btn-danger" onclick="confirmClearGenerated()">
+        <i class="fa-solid fa-trash"></i> Clear All Generated Images
+      </button>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  initSettingsPage();
+</script>
+{% endblock %}

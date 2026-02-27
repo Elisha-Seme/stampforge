@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Audit Log{% endblock %}
+{% block page_title %}Audit Log{% endblock %}
+
+{% block topbar_actions %}
+<a href="/api/audit-log/export" class="btn btn-secondary">
+  <i class="fa-solid fa-file-csv"></i> Export CSV
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="panel">
+  <div class="panel-header">
+    <h2 class="panel-title"><i class="fa-solid fa-clock-rotate-left"></i> Activity Log
+      <span class="badge" id="logCount">—</span>
+    </h2>
+    <div class="search-box" style="max-width:320px;">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="logSearch" placeholder="Search logs…" oninput="searchLog()"/>
+    </div>
+  </div>
+
+  <div id="logTableWrap">
+    <div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div>
+  </div>
+
+  <div class="pagination-row">
+    <button class="btn btn-sm btn-ghost" id="prevPage" onclick="changePage(-1)" disabled>
+      <i class="fa-solid fa-chevron-left"></i> Prev
+    </button>
+    <span id="pageInfo" class="text-muted text-sm">Page 1</span>
+    <button class="btn btn-sm btn-ghost" id="nextPage" onclick="changePage(1)">
+      Next <i class="fa-solid fa-chevron-right"></i>
+    </button>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  initAuditLog();
+</script>
+{% endblock %}

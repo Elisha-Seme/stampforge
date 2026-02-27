@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Stamp PDFs{% endblock %}
+{% block page_title %}Stamp PDF Documents{% endblock %}
+
+{% block content %}
+<div class="two-col-layout">
+
+  <!-- ======= LEFT: Options ======= -->
+  <div class="options-panel">
+
+    <!-- Step 1: Upload PDF -->
+    <div class="panel step-panel" id="step1">
+      <div class="panel-header">
+        <h2 class="panel-title"><span class="step-num">1</span> Upload PDF</h2>
+        <span id="step1Check" class="step-check hidden"><i class="fa-solid fa-circle-check"></i></span>
+      </div>
+      <div class="dropzone" id="pdfDropzone" onclick="document.getElementById('pdfFileInput').click()">
+        <i class="fa-solid fa-file-pdf fa-2x"></i>
+        <p id="pdfDropText">Click or drag a PDF here</p>
+        <input type="file" id="pdfFileInput" accept=".pdf" class="hidden" onchange="handlePDFUpload(event)"/>
+      </div>
+      <div id="pdfInfo" class="pdf-info hidden">
+        <i class="fa-solid fa-file-pdf"></i>
+        <div>
+          <strong id="pdfName">—</strong>
+          <span id="pdfPages" class="text-muted"></span>
+        </div>
+        <button class="btn-icon" onclick="clearPDF()" title="Remove"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+    </div>
+
+    <!-- Step 2: Configure stamp -->
+    <div class="panel step-panel" id="step2">
+      <div class="panel-header">
+        <h2 class="panel-title"><span class="step-num">2</span> Configure Stamp</h2>
+      </div>
+
+      <div class="form-group">
+        <label>Staff Member <span class="required">*</span></label>
+        <select id="pdf_staff" class="select-input">
+          <option value="">— Select staff member —</option>
+          {% for s in staff_list %}
+          <option value="{{ s.id }}">{{ s.full_name }} ({{ s.department }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Stamp Style</label>
+        <select id="pdf_style" class="select-input">
+          <option value="A">Style A — Circular Seal</option>
+          <option value="B">Style B — Approval Stamp</option>
+          <option value="C">Style C — Signature</option>
+          <option value="D">Style D — QR Verified</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Color</label>
+        <select id="pdf_color" class="select-input">
+          <option value="#1a2b5e">Navy Blue</option>
+          <option value="green">Green (Approved)</option>
+          <option value="red">Red (Rejected)</option>
+          <option value="blue">Blue (Reviewed)</option>
+          <option value="orange">Orange (Pending)</option>
+          <option value="#6d28d9">Purple</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Stamp Size</label>
+        <select id="pdf_size" class="select-input">
+          <option value="small">Small</option>
+          <option value="medium" selected>Medium</option>
+          <option value="large">Large</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Step 3: Placement -->
+    <div class="panel step-panel" id="step3">
+      <div class="panel-header">
+        <h2 class="panel-title"><span class="step-num">3</span> Placement</h2>
+      </div>
+
+      <div class="form-group">
+        <label>Position</label>
+        <div class="placement-grid">
+          <button class="place-btn" data-pos="top-left"     onclick="setPlacement('top-left')">Top Left</button>
+          <button class="place-btn" data-pos="top-right"    onclick="setPlacement('top-right')">Top Right</button>
+          <button class="place-btn" data-pos="center"       onclick="setPlacement('center')">Center</button>
+          <button class="place-btn" data-pos="bottom-left"  onclick="setPlacement('bottom-left')">Bottom Left</button>
+          <button class="place-btn active" data-pos="bottom-right" onclick="setPlacement('bottom-right')">Bottom Right</button>
+          <button class="place-btn" data-pos="custom"       onclick="setPlacement('custom')">Custom</button>
+        </div>
+      </div>
+
+      <div id="customCoordsRow" class="form-grid hidden">
+        <div class="form-group">
+          <label>X (pt from left)</label>
+          <input type="number" id="custom_x" class="form-input" value="50" min="0"/>
+        </div>
+        <div class="form-group">
+          <label>Y (pt from top)</label>
+          <input type="number" id="custom_y" class="form-input" value="50" min="0"/>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Pages</label>
+        <div class="btn-group">
+          <button class="btn-toggle active" data-pages="all"   onclick="setPages('all')">All</button>
+          <button class="btn-toggle" data-pages="first"        onclick="setPages('first')">First</button>
+          <button class="btn-toggle" data-pages="last"         onclick="setPages('last')">Last</button>
+          <button class="btn-toggle" data-pages="custom-pages" onclick="setPages('custom-pages')">Custom</button>
+        </div>
+        <input type="text" id="customPages" class="form-input mt-1 hidden"
+               placeholder="e.g. 1,3,5 or 2-4"/>
+      </div>
+
+      <div class="form-group">
+        <label>Stamp Width (PDF points)</label>
+        <input type="range" id="stampWidthRange" min="60" max="300" value="120"
+               oninput="document.getElementById('stampWidthVal').textContent = this.value"/>
+        <span id="stampWidthVal">120</span> pt
+      </div>
+
+      <button class="btn btn-primary btn-full" onclick="applyStamp()" id="applyStampBtn">
+        <i class="fa-solid fa-stamp"></i> Apply Stamp to PDF
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ======= RIGHT: Preview ======= -->
+  <div class="preview-panel">
+    <div class="panel">
+      <div class="panel-header">
+        <h2 class="panel-title"><i class="fa-regular fa-eye"></i> Document Preview</h2>
+        <div id="pdfNavRow" class="hidden pdf-nav">
+          <button class="btn-icon" onclick="previewPage(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+          <span id="pageIndicator">Page 1</span>
+          <button class="btn-icon" onclick="previewPage(1)"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+      </div>
+      <div id="pdfPreviewArea" class="pdf-preview-area">
+        <div class="preview-placeholder">
+          <i class="fa-solid fa-file-pdf fa-3x"></i>
+          <p>Upload a PDF to preview</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div id="stampedResult" class="panel hidden">
+      <div class="panel-header">
+        <h2 class="panel-title"><i class="fa-solid fa-circle-check" style="color:var(--green)"></i> Stamp Applied!</h2>
+      </div>
+      <p class="text-muted">Your stamped PDF is ready.</p>
+      <a id="downloadStampedPDF" href="#" class="btn btn-primary" download>
+        <i class="fa-solid fa-download"></i> Download Stamped PDF
+      </a>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  initStampPDFPage();
+</script>
+{% endblock %}

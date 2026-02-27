@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Staff{% endblock %}
+{% block page_title %}Staff Management{% endblock %}
+
+{% block topbar_actions %}
+<button class="btn btn-primary" onclick="openAddStaffModal()">
+  <i class="fa-solid fa-user-plus"></i> Add Staff
+</button>
+<button class="btn btn-secondary" onclick="openImportModal()">
+  <i class="fa-solid fa-file-import"></i> Import CSV
+</button>
+{% endblock %}
+
+{% block content %}
+
+<!-- Search & Filter bar -->
+<div class="filter-bar">
+  <div class="search-box">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input type="text" id="staffSearch" placeholder="Search by name, ID, or email…" oninput="filterStaff()"/>
+  </div>
+  <select id="deptFilter" class="select-input" onchange="filterStaff()">
+    <option value="">All Departments</option>
+  </select>
+  <label class="toggle-label">
+    <input type="checkbox" id="showInactive" onchange="filterStaff()"/>
+    Show Inactive
+  </label>
+</div>
+
+<!-- Staff table -->
+<div class="panel">
+  <div class="panel-header">
+    <h2 class="panel-title"><i class="fa-solid fa-users"></i> Staff Members
+      <span class="badge" id="staffCount">—</span>
+    </h2>
+  </div>
+  <div id="staffTableWrap">
+    <div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> Loading…</div>
+  </div>
+</div>
+
+<!-- ======= Add / Edit Staff Modal ======= -->
+<div id="staffModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeStaffModal()"><i class="fa-solid fa-xmark"></i></button>
+    <h2 id="staffModalTitle" class="modal-title">Add Staff Member</h2>
+    <form id="staffForm" onsubmit="submitStaffForm(event)">
+      <input type="hidden" id="editStaffId"/>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Full Name <span class="required">*</span></label>
+          <input type="text" id="f_fullname" class="form-input" required/>
+        </div>
+        <div class="form-group">
+          <label>Job Title <span class="required">*</span></label>
+          <input type="text" id="f_title" class="form-input" required/>
+        </div>
+        <div class="form-group">
+          <label>Department <span class="required">*</span></label>
+          <input type="text" id="f_dept" class="form-input" list="deptSuggestions" required/>
+          <datalist id="deptSuggestions"></datalist>
+        </div>
+        <div class="form-group">
+          <label>Employee ID <span class="text-muted">(auto-generated if blank)</span></label>
+          <input type="text" id="f_empid" class="form-input" placeholder="e.g. ENG-JS-001"/>
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="f_email" class="form-input" placeholder="name@company.com"/>
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="text" id="f_phone" class="form-input" placeholder="+1 555 0100"/>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeStaffModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="staffSubmitBtn">
+          <i class="fa-solid fa-floppy-disk"></i> Save
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ======= Import CSV Modal ======= -->
+<div id="importModal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeImportModal()"><i class="fa-solid fa-xmark"></i></button>
+    <h2 class="modal-title">Import Staff from CSV</h2>
+    <p class="text-muted">CSV must include columns: <code>full_name</code>, <code>job_title</code>,
+       <code>department</code>. Optional: <code>email</code>, <code>phone</code>, <code>employee_id</code>.</p>
+    <div class="dropzone" id="csvDropzone" onclick="document.getElementById('csvFileInput').click()">
+      <i class="fa-solid fa-file-csv fa-2x"></i>
+      <p>Click or drag a CSV file here</p>
+      <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="handleCSVFile(event)"/>
+    </div>
+    <div id="importResult" class="import-result hidden"></div>
+    <div class="form-actions">
+      <button type="button" class="btn btn-ghost" onclick="closeImportModal()">Close</button>
+      <button type="button" class="btn btn-primary" id="importBtn" onclick="uploadCSV()" disabled>
+        <i class="fa-solid fa-upload"></i> Import
+      </button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  loadStaff();
+</script>
+{% endblock %}

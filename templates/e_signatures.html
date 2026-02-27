@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block title %}E-Signatures{% endblock %}
+{% block page_title %}E-Signatures{% endblock %}
+
+{% block content %}
+<div class="two-col-layout esig-layout">
+
+  <!-- ======= LEFT: Staff list ======= -->
+  <div class="options-panel">
+    <div class="panel">
+      <div class="panel-header">
+        <h2 class="panel-title"><i class="fa-solid fa-users"></i> Staff Members</h2>
+      </div>
+      <div class="search-box" style="margin-bottom:.75rem;">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="sigStaffSearch" placeholder="Search staff…" oninput="filterSigStaff()"/>
+      </div>
+      <ul class="sig-staff-list" id="sigStaffList">
+        {% for s in staff_list %}
+        <li class="sig-staff-item {% if loop.first %}active{% endif %}"
+            data-id="{{ s.id }}"
+            data-name="{{ s.full_name }}"
+            data-title="{{ s.job_title }}"
+            data-dept="{{ s.department }}"
+            data-has-sig="{{ '1' if s.image_path else '0' }}"
+            onclick="selectStaff(this)">
+          <div class="sig-staff-info">
+            <strong class="sig-staff-name">{{ s.full_name }}</strong>
+            <span class="sig-staff-sub text-muted">{{ s.job_title }} · {{ s.department }}</span>
+          </div>
+          <span class="sig-status-dot {% if s.image_path %}has-sig{% endif %}"
+                title="{% if s.image_path %}Signature saved{% else %}No signature{% endif %}"></span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- ======= RIGHT: Signature pad ======= -->
+  <div class="preview-panel">
+
+    <!-- Staff info bar -->
+    <div class="panel sig-info-bar" id="sigInfoBar">
+      <div class="sig-staff-avatar" id="sigAvatar">
+        <i class="fa-solid fa-user-tie"></i>
+      </div>
+      <div class="sig-staff-details">
+        <div class="sig-staff-fullname" id="sigFullName">Select a staff member</div>
+        <div class="sig-staff-meta text-muted text-sm" id="sigMeta"></div>
+      </div>
+      <div class="sig-action-row" id="sigActionRow" style="display:none">
+        <button class="btn btn-sm btn-ghost" onclick="clearPad()" title="Clear canvas">
+          <i class="fa-solid fa-eraser"></i> Clear
+        </button>
+        <button class="btn btn-sm btn-ghost" onclick="undoStroke()" title="Undo last stroke">
+          <i class="fa-solid fa-rotate-left"></i> Undo
+        </button>
+        <button class="btn btn-sm btn-primary" onclick="saveSignature()" id="saveSigBtn">
+          <i class="fa-solid fa-floppy-disk"></i> Save Signature
+        </button>
+      </div>
+    </div>
+
+    <!-- Canvas pad -->
+    <div class="panel sig-pad-panel" id="sigPadPanel" style="display:none">
+
+      <!-- Panel header: title + pen controls + mode toggle -->
+      <div class="panel-header">
+        <h2 class="panel-title"><i class="fa-solid fa-pen-fancy"></i> Draw Signature</h2>
+        <div class="sig-pen-controls">
+          <label class="text-muted text-sm">Pen:</label>
+          <input type="color" id="penColor" value="#1a2b5e" title="Pen color"
+                 onchange="updatePen()"/>
+          <input type="range" id="penSize" min="1" max="12" value="3"
+                 title="Pen thickness" oninput="updatePen()"/>
+          <span class="text-sm text-muted" id="penSizeLabel">3px</span>
+
+          <div class="tp-divider"></div>
+
+          <!-- Trackpad mode toggle -->
+          <button class="btn btn-sm tp-toggle-btn" id="tpModeBtn"
+                  onclick="toggleTrackpadMode()" title="Enable trackpad drawing mode">
+            <i class="fa-solid fa-hand-pointer"></i>
+            <span id="tpModeBtnLabel">Trackpad Mode</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Adaptive guidance card -->
+      <div class="sig-guidance" id="sigGuidance">
+        <!-- Steps rendered by JS based on current mode -->
+      </div>
+
+      <!-- Canvas -->
+      <div class="sig-canvas-wrap" id="sigCanvasWrap">
+        <!-- Lift countdown bar (runs along bottom of canvas in trackpad mode) -->
+        <div class="tp-lift-bar" id="tpLiftBar"></div>
+
+        <canvas id="sigCanvas" class="sig-canvas"></canvas>
+
+        <!-- Idle hint (shown when canvas is empty) -->
+        <div class="sig-canvas-hint" id="sigCanvasHint">
+          <i class="fa-solid fa-pen-fancy fa-2x"></i>
+          <p id="sigCanvasHintText">Click and drag to sign</p>
+        </div>
+
+        <!-- Live status badge (shown in trackpad mode) -->
+        <div class="tp-status-badge hidden" id="tpStatusBadge">
+          <span class="tp-status-dot" id="tpStatusDot"></span>
+          <span id="tpStatusText">Move finger to draw</span>
+        </div>
+      </div>
+
+      <!-- Lift delay control (only visible in trackpad mode) -->
+      <div class="tp-delay-row hidden" id="tpDelayRow">
+        <label class="text-sm text-muted">
+          <i class="fa-solid fa-hourglass-half"></i>
+          Pen-lift delay:
+        </label>
+        <input type="range" id="tpDelaySlider" min="200" max="900" step="50" value="450"
+               oninput="updateLiftDelay()"/>
+        <span class="text-sm text-muted" id="tpDelayLabel">450 ms</span>
+        <span class="text-sm text-muted tp-delay-hint">
+          (pause this long to lift the pen and reposition)
+        </span>
+      </div>
+
+      <div class="sig-pad-footer">
+        <div class="sig-line-label text-muted text-sm">
+          <i class="fa-solid fa-minus"></i> Signature line
+        </div>
+      </div>
+    </div>
+
+    <!-- Saved signature display -->
+    <div class="panel" id="savedSigPanel" style="display:none">
+      <div class="panel-header">
+        <h2 class="panel-title">
+          <i class="fa-solid fa-circle-check" style="color:var(--green)"></i> Saved Signature
+        </h2>
+        <div style="display:flex;gap:.5rem;">
+          <button class="btn btn-sm btn-ghost" onclick="showPadToRedraw()" title="Redraw">
+            <i class="fa-solid fa-pen"></i> Redraw
+          </button>
+          <button class="btn btn-sm btn-danger" onclick="deleteSignature()" title="Delete">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+      <div class="saved-sig-wrap">
+        <img id="savedSigImg" src="" alt="Saved signature" class="saved-sig-img"/>
+      </div>
+
+      <!-- Generate stamp / apply to PDF -->
+      <div class="sig-apply-section">
+        <div class="sig-apply-row">
+          <div class="sig-apply-block">
+            <h3 class="sig-apply-title">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Stamp (Style C)
+            </h3>
+            <p class="text-muted text-sm">Creates a stamp image containing your signature, title, department, and date.</p>
+            <div class="form-grid" style="margin-top:.5rem;">
+              <div class="form-group">
+                <label>Color</label>
+                <select id="sigStampColor" class="select-input">
+                  <option value="#1a2b5e">Navy Blue</option>
+                  <option value="#7c3aed">Purple</option>
+                  <option value="#065f46">Dark Green</option>
+                  <option value="#7f1d1d">Dark Red</option>
+                  <option value="#0f766e">Teal</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Size</label>
+                <select id="sigStampSize" class="select-input">
+                  <option value="small">Small</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="large">Large</option>
+                </select>
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-full" onclick="generateSigStamp()" id="genSigStampBtn">
+              <i class="fa-solid fa-stamp"></i> Generate Stamp Image
+            </button>
+            <div id="generatedSigStampWrap" class="generated-stamp-preview hidden">
+              <img id="generatedSigStampImg" src="" alt="Generated stamp" class="generated-stamp-img"/>
+              <a id="downloadSigStamp" href="#" class="btn btn-sm btn-ghost" download>
+                <i class="fa-solid fa-download"></i> Download PNG
+              </a>
+            </div>
+          </div>
+
+          <div class="sig-apply-block">
+            <h3 class="sig-apply-title">
+              <i class="fa-solid fa-file-pdf"></i> Apply Signature to PDF
+            </h3>
+            <p class="text-muted text-sm">Places the raw drawn signature directly onto a PDF — no stamp border.</p>
+            <div class="dropzone dropzone-sm" onclick="document.getElementById('sigPdfInput').click()">
+              <i class="fa-solid fa-file-pdf"></i>
+              <span id="sigPdfLabel">Click to upload PDF</span>
+              <input type="file" id="sigPdfInput" accept=".pdf" class="hidden"
+                     onchange="handleSigPDF(event)"/>
+            </div>
+            <div class="form-group" style="margin-top:.5rem;">
+              <label>Placement</label>
+              <select id="sigPlacement" class="select-input">
+                <option value="bottom-right">Bottom Right</option>
+                <option value="bottom-left">Bottom Left</option>
+                <option value="top-right">Top Right</option>
+                <option value="top-left">Top Left</option>
+                <option value="center">Center</option>
+              </select>
+            </div>
+            <button class="btn btn-primary btn-full" onclick="applySigToPDF()"
+                    id="applySigPDFBtn" disabled>
+              <i class="fa-solid fa-file-signature"></i> Apply & Download PDF
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Placeholder when nothing selected -->
+    <div class="panel" id="sigPlaceholder">
+      <div class="preview-placeholder" style="padding:3rem 0;">
+        <i class="fa-solid fa-pen-fancy fa-3x"></i>
+        <p>Select a staff member from the list to manage their e-signature</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  initESignaturePage();
+</script>
+{% endblock %}

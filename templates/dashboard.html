@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Stats cards -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon bg-blue"><i class="fa-solid fa-users"></i></div>
+    <div class="stat-body">
+      <div class="stat-value" id="statStaff">{{ stats.total_staff }}</div>
+      <div class="stat-label">Total Staff</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon bg-green"><i class="fa-solid fa-stamp"></i></div>
+    <div class="stat-body">
+      <div class="stat-value" id="statStamps">{{ stats.total_stamps }}</div>
+      <div class="stat-label">Stamps Generated</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon bg-orange"><i class="fa-solid fa-file-pdf"></i></div>
+    <div class="stat-body">
+      <div class="stat-value" id="statPDFs">{{ stats.total_pdfs_stamped }}</div>
+      <div class="stat-label">PDFs Stamped</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon bg-purple"><i class="fa-solid fa-building"></i></div>
+    <div class="stat-body">
+      <div class="stat-value">{{ stats.departments | length }}</div>
+      <div class="stat-label">Departments</div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick actions -->
+<div class="section-row">
+  <div class="panel flex-2">
+    <div class="panel-header">
+      <h2 class="panel-title"><i class="fa-solid fa-bolt"></i> Quick Actions</h2>
+    </div>
+    <div class="quick-actions">
+      <a href="/generate" class="qa-btn">
+        <i class="fa-solid fa-wand-magic-sparkles"></i>
+        <span>Generate Stamp</span>
+      </a>
+      <a href="/stamp-pdf" class="qa-btn">
+        <i class="fa-solid fa-file-pdf"></i>
+        <span>Stamp a PDF</span>
+      </a>
+      <a href="/staff" class="qa-btn">
+        <i class="fa-solid fa-user-plus"></i>
+        <span>Add Staff</span>
+      </a>
+      <a href="/audit-log" class="qa-btn">
+        <i class="fa-solid fa-clock-rotate-left"></i>
+        <span>View Audit Log</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Departments breakdown -->
+  <div class="panel flex-1">
+    <div class="panel-header">
+      <h2 class="panel-title"><i class="fa-solid fa-sitemap"></i> Departments</h2>
+    </div>
+    {% if stats.departments %}
+    <ul class="dept-list">
+      {% for dept in stats.departments %}
+      <li class="dept-item">
+        <span class="dept-name">{{ dept.department }}</span>
+        <span class="dept-count badge">{{ dept.count }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="empty-state">No departments yet. <a href="/staff">Add staff →</a></p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Recent activity -->
+<div class="panel">
+  <div class="panel-header">
+    <h2 class="panel-title"><i class="fa-solid fa-clock-rotate-left"></i> Recent Activity</h2>
+    <a href="/audit-log" class="panel-link">View all →</a>
+  </div>
+  {% if stats.recent_activity %}
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Action</th>
+        <th>Staff Member</th>
+        <th>Document</th>
+        <th>Details</th>
+        <th>Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entry in stats.recent_activity %}
+      <tr>
+        <td><span class="action-badge action-{{ entry.action | lower | replace('_','-') }}">{{ entry.action }}</span></td>
+        <td>{{ entry.staff_name or '—' }}</td>
+        <td>{{ entry.document_name or '—' }}</td>
+        <td class="text-muted text-sm">{{ entry.details or '' }}</td>
+        <td class="text-muted text-sm">{{ entry.created_at }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty-state">No activity yet. Generate your first stamp!</p>
+  {% endif %}
+</div>
+{% endblock %}

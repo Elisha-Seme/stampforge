@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Verify Stamp{% endblock %}
+{% block page_title %}Stamp Verification{% endblock %}
+
+{% block content %}
+<div class="verify-card">
+  <div class="verify-icon">
+    <i class="fa-solid fa-shield-check"></i>
+  </div>
+  <h1 class="verify-title">Stamp Verification</h1>
+  {% if stamp_id %}
+  <div class="verify-detail">
+    <div class="vd-row"><span>Stamp ID</span><strong>{{ stamp_id }}</strong></div>
+    <div class="vd-row"><span>Staff ID</span><strong>{{ staff_id }}</strong></div>
+    <div class="vd-row"><span>Timestamp</span><strong>{{ ts }}</strong></div>
+    <div class="vd-row"><span>Issued By</span><strong>{{ org.name if org else '—' }}</strong></div>
+  </div>
+  <div class="verify-status valid">
+    <i class="fa-solid fa-circle-check"></i> This stamp record exists in the system.
+  </div>
+  {% else %}
+  <div class="verify-status invalid">
+    <i class="fa-solid fa-circle-xmark"></i> No stamp ID provided. Invalid verification link.
+  </div>
+  {% endif %}
+  <a href="/" class="btn btn-secondary mt-2">← Back to Dashboard</a>
+</div>
+{% endblock %}
